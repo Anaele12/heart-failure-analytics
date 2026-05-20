@@ -26,19 +26,19 @@ except Exception as e:
 st.sidebar.header("Patient Clinical Metrics")
 
 age_input = st.sidebar.slider("Age", min_value=1, max_value=120, value=50)
-sex_input = st.sidebar.selectbox("Sex (0 = Female, 1 = Male)", options=[0, 1])
+sex_input = st.sidebar.selectbox("Sex", options=["M", "F"])
 resting_bp_input = st.sidebar.slider("Resting Blood Pressure (mm Hg)", min_value=50, max_value=220, value=120)
 cholesterol_input = st.sidebar.slider("Serum Cholesterol (mg/dl)", min_value=0, max_value=600, value=200)
 fasting_bs_input = st.sidebar.selectbox("Fasting Blood Sugar > 120 mg/dl (0 = No, 1 = Yes)", options=[0, 1])
 max_hr_input = st.sidebar.slider("Maximum Heart Rate Achieved (bpm)", min_value=50, max_value=250, value=150)
 exercise_angina_input = st.sidebar.selectbox("Exercise-Induced Angina (0 = No, 1 = Yes)", options=[0, 1])
 oldpeak_input = st.sidebar.slider("Oldpeak (ST depression induced by exercise)", min_value=0.0, max_value=10.0, value=1.0, step=0.1)
-st_slope_input = st.sidebar.selectbox("ST Slope Type (1 = Upsloping, 2 = Flat, 3 = Downsloping)", options=[1, 2, 3])
+st_slope_input = st.sidebar.selectbox("ST Slope Type", options=["Up", "Flat", "Down"])
 
 chest_pain = st.sidebar.selectbox("Chest Pain Type", options=["ASY", "ATA", "NAP", "TA"])
 resting_ecg = st.sidebar.selectbox("Resting ECG Results", options=["Normal", "LVH", "ST"])
 
-# --- STEP 3: FEATURE ENGINEERING & ALIGNMENT ---
+# --- STEP 3: FEATURE ENGINEERING & ONE-HOT CODES ---
 
 # 1. Compute your data science engineered features
 cardiac_workload = resting_bp_input * max_hr_input
@@ -51,20 +51,25 @@ age_group_senior = 1 if (age_input >= 65) else 0
 # 3. Construct the dataframe to mirror the fit environment exactly
 input_data = {
     'Age': age_input,
-    'Sex': sex_input,
-    'RestingBP': resting_bp_input,
     'Cholesterol': cholesterol_input,
     'FastingBS': fasting_bs_input,
     'MaxHR': max_hr_input,
     'ExerciseAngina': exercise_angina_input,
     'Oldpeak': oldpeak_input,
-    'ST_Slope': st_slope_input,
+    'RestingBP': resting_bp_input,
     
     # Engineered features
     'Cardiac_Workload': cardiac_workload,
     'Ischemic_Stress_Index': ischemic_stress,
     'Age_Risk_Group_Middle-Aged': age_group_middle,
     'Age_Risk_Group_Senior': age_group_senior,
+    
+    # One-Hot Encoded Sex (Model expects Sex_M)
+    'Sex_M': 1 if sex_input == 'M' else 0,
+    
+    # One-Hot Encoded ST_Slope (Model expects _Flat and _Up)
+    'ST_Slope_Flat': 1 if st_slope_input == 'Flat' else 0,
+    'ST_Slope_Up': 1 if st_slope_input == 'Up' else 0,
     
     # Categorical variables matching exact training cases
     'ChestPainType_Ata': 1 if chest_pain == 'ATA' else 0,
@@ -73,17 +78,17 @@ input_data = {
     
     'RestingECG_LVH': 1 if resting_ecg == 'LVH' else 0,
     'RestingECG_Normal': 1 if resting_ecg == 'Normal' else 0,
-    'RestingECG_St': 1 if resting_ecg == 'ST' else 0  # Matches lowercase 'St' seen at fit time
+    'RestingECG_St': 1 if resting_ecg == 'ST' else 0  
 }
 
 # Convert dictionary to DataFrame
 input_df = pd.DataFrame([input_data])
 
-# Enforce the strict column order seen during training
+# Enforce the final strict column order seen during training
 feature_order = [
-    'Age', 'Sex', 'RestingBP', 'Cholesterol', 'FastingBS', 'MaxHR', 
-    'ExerciseAngina', 'Oldpeak', 'ST_Slope', 'Cardiac_Workload', 
-    'Ischemic_Stress_Index', 'Age_Risk_Group_Middle-Aged', 'Age_Risk_Group_Senior',
+    'Age', 'Cholesterol', 'FastingBS', 'MaxHR', 'ExerciseAngina', 'Oldpeak', 'RestingBP',
+    'Cardiac_Workload', 'Ischemic_Stress_Index', 'Age_Risk_Group_Middle-Aged', 'Age_Risk_Group_Senior',
+    'Sex_M', 'ST_Slope_Flat', 'ST_Slope_Up',
     'ChestPainType_Ata', 'ChestPainType_Nap', 'ChestPainType_Ta', 
     'RestingECG_LVH', 'RestingECG_Normal', 'RestingECG_St'
 ]
@@ -119,7 +124,5 @@ if st.button("Run Risk Assessment"):
             st.metric(label="Calculated Probability of Heart Failure", value=f"{prediction_proba * 100:.1f}%")
             st.progress(float(prediction_proba))
             
-    except NameError:
-        st.error("Model file loading error occurred. Could not run calculations.")
     except Exception as prediction_error:
         st.error(f"An unexpected error occurred during valuation: {prediction_error}")
