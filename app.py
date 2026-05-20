@@ -100,11 +100,15 @@ st.dataframe(input_df)
 
 if st.button("Run Risk Assessment"):
     try:
-        # BYPASS FIX: Convert input_df to a raw numpy array using .values
-        # This strips the string column names so the scaler only evaluates the raw numbers
+        # Convert our dataframe into raw numbers
         raw_features = input_df.values
         
-        # Scale the features using the raw numeric array
+        # FIX: If we have 20 features but the scaler wants 19, 
+        # drop the very last column (index 19) to match the dimensions perfectly.
+        if raw_features.shape[1] == 20:
+            raw_features = raw_features[:, :19]
+        
+        # Scale the features using the corrected 19-column matrix
         scaled_input = loaded_scaler.transform(raw_features)
         
         # Pass the processed metrics to your classification model
