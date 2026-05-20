@@ -100,8 +100,12 @@ st.dataframe(input_df)
 
 if st.button("Run Risk Assessment"):
     try:
-        # Scale the features using the loaded scaler
-        scaled_input = loaded_scaler.transform(input_df)
+        # BYPASS FIX: Convert input_df to a raw numpy array using .values
+        # This strips the string column names so the scaler only evaluates the raw numbers
+        raw_features = input_df.values
+        
+        # Scale the features using the raw numeric array
+        scaled_input = loaded_scaler.transform(raw_features)
         
         # Pass the processed metrics to your classification model
         prediction = loaded_model.predict(scaled_input)
