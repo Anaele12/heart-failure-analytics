@@ -211,8 +211,42 @@ elif page_selection == "4. Patient Risk Assessment Tool":
             'Age_Risk_Group_Senior': 1 if age > 60 else 0
         }
 
-        # Format input vector into DataFrame matching the structure of X_encoded
-        input_df = pd.DataFrame([input_data])
+        # 1. Gather inputs from your Streamlit widgets
+# (Make sure these variable names match what you called your sliders/selectboxes!)
+input_data = {
+    'Age': age_input,
+    'Sex': sex_input,
+    'RestingBP': resting_bp_input,
+    'Cholesterol': cholesterol_input,
+    'FastingBS': fasting_bs_input,  # <-- Added missing column
+    'MaxHR': max_hr_input,
+    'ExerciseAngina': exercise_angina_input,
+    'Oldpeak': oldpeak_input,
+    'ST_Slope': st_slope_input,
+    
+    # Match the exact casing 'Ata', 'Nap', 'Ta' seen during training:
+    'ChestPainType_Ata': 1 if chest_pain == 'ATA' else 0,
+    'ChestPainType_Nap': 1 if chest_pain == 'NAP' else 0,
+    'ChestPainType_Ta': 1 if chest_pain == 'TA' else 0,
+    
+    # Match the exact casing and include 'Normal' seen during training:
+    'RestingECG_LVH': 1 if resting_ecg == 'LVH' else 0,
+    'RestingECG_Normal': 1 if resting_ecg == 'Normal' else 0,
+    'RestingECG_ST': 1 if resting_ecg == 'ST' else 0
+}
+
+# 2. Convert to DataFrame
+input_df = pd.DataFrame([input_data])
+
+# 3. Ensure the columns match your training data order perfectly
+# (Rearrange these to match the exact order of your training features if needed)
+feature_order = [
+    'Age', 'Sex', 'RestingBP', 'Cholesterol', 'FastingBS', 'MaxHR', 
+    'ExerciseAngina', 'Oldpeak', 'ST_Slope', 
+    'ChestPainType_Ata', 'ChestPainType_Nap', 'ChestPainType_Ta', 
+    'RestingECG_LVH', 'RestingECG_Normal', 'RestingECG_ST'
+]
+input_df = input_df[feature_order]
         
         # Scale inputs using the saved training scaling rules
         scaled_input = loaded_scaler.transform(input_df)
