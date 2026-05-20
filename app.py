@@ -163,11 +163,15 @@ elif page_selection == "4. Patient Risk Assessment Tool":
     st.divider()
 
     try:
-        # Load the saved model and scaler files
-        with open('heart_model.pkl', 'rb') as f:
-            loaded_model = pickle.load(f)
-        with open('scaler.pkl', 'rb') as f:
-            loaded_scaler = pickle.load(f)
+    # Your loading code here
+    loaded_scaler = joblib.load('scaler.pkl')
+except Exception as e:
+    st.error(f"Error loading files: {e}")
+
+# --- NOW your input data dictionary can safely start here ---
+input_data = {
+    'Age': age_input,
+    # ... rest of your dictionary code
             
         # Create a clean input form split across two columns
         col1, col2 = st.columns(2)
