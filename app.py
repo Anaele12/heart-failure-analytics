@@ -38,9 +38,17 @@ st_slope_input = st.sidebar.selectbox("ST Slope Type (1 = Upsloping, 2 = Flat, 3
 chest_pain = st.sidebar.selectbox("Chest Pain Type", options=["ASY", "ATA", "NAP", "TA"])
 resting_ecg = st.sidebar.selectbox("Resting ECG Results", options=["Normal", "LVH", "ST"])
 
-# --- STEP 3: FEATURE ALIGNMENT AND PROCESSING ---
-# We manually structure the dictionary to match the exact uppercase/lowercase layouts 
-# seen during your model's training phase.
+# --- STEP 3: FEATURE ENGINEERING & ALIGNMENT ---
+
+# 1. Compute your data science engineered features
+cardiac_workload = resting_bp_input * max_hr_input
+ischemic_stress = oldpeak_input * (1 if exercise_angina_input == 1 else 0.5)
+
+# 2. Replicate the Age Risk groups categorization
+age_group_middle = 1 if (45 <= age_input < 65) else 0
+age_group_senior = 1 if (age_input >= 65) else 0
+
+# 3. Construct the dataframe to mirror the fit environment exactly
 input_data = {
     'Age': age_input,
     'Sex': sex_input,
@@ -52,26 +60,32 @@ input_data = {
     'Oldpeak': oldpeak_input,
     'ST_Slope': st_slope_input,
     
-    # Matching exact fit-time cases ('_Ata', '_Nap', '_Ta')
+    # Engineered features
+    'Cardiac_Workload': cardiac_workload,
+    'Ischemic_Stress_Index': ischemic_stress,
+    'Age_Risk_Group_Middle-Aged': age_group_middle,
+    'Age_Risk_Group_Senior': age_group_senior,
+    
+    # Categorical variables matching exact training cases
     'ChestPainType_Ata': 1 if chest_pain == 'ATA' else 0,
     'ChestPainType_Nap': 1 if chest_pain == 'NAP' else 0,
     'ChestPainType_Ta': 1 if chest_pain == 'TA' else 0,
     
-    # Matching exact fit-time cases ('_LVH', '_Normal', '_ST')
     'RestingECG_LVH': 1 if resting_ecg == 'LVH' else 0,
     'RestingECG_Normal': 1 if resting_ecg == 'Normal' else 0,
-    'RestingECG_ST': 1 if resting_ecg == 'ST' else 0
+    'RestingECG_St': 1 if resting_ecg == 'ST' else 0  # Matches lowercase 'St' seen at fit time
 }
 
 # Convert dictionary to DataFrame
 input_df = pd.DataFrame([input_data])
 
-# Enforce the explicit column order required by scikit-learn
+# Enforce the strict column order seen during training
 feature_order = [
     'Age', 'Sex', 'RestingBP', 'Cholesterol', 'FastingBS', 'MaxHR', 
-    'ExerciseAngina', 'Oldpeak', 'ST_Slope', 
+    'ExerciseAngina', 'Oldpeak', 'ST_Slope', 'Cardiac_Workload', 
+    'Ischemic_Stress_Index', 'Age_Risk_Group_Middle-Aged', 'Age_Risk_Group_Senior',
     'ChestPainType_Ata', 'ChestPainType_Nap', 'ChestPainType_Ta', 
-    'RestingECG_LVH', 'RestingECG_Normal', 'RestingECG_ST'
+    'RestingECG_LVH', 'RestingECG_Normal', 'RestingECG_St'
 ]
 input_df = input_df[feature_order]
 
